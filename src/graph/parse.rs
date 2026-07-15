@@ -53,12 +53,12 @@ mod tests {
 
     #[test]
     fn parses_null_delimited_records() {
-        let raw = "abc123\0def456\0(HEAD -> main)\0Fix bug\0Alice\01700000000\0";
         // Avoid Rust octal escapes: `\017` is one char — use concat for timestamps.
         let raw = concat!(
             "abc123\0def456\0(HEAD -> main)\0Fix bug\0Alice\0",
             "1700000000\0"
         );
+        let commits = parse_log(raw);
         assert_eq!(commits.len(), 1);
         assert_eq!(commits[0].hash, "abc123");
         assert_eq!(commits[0].parents, vec!["def456"]);

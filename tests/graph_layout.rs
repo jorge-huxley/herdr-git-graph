@@ -39,7 +39,13 @@ fn layout_merge_history() {
 
 #[test]
 fn parse_and_layout_integration() {
-    let raw = "aaa\0\0(HEAD -> main)\0init\0Dev\01700000000\0bbb\0aaa\0\0second\0Dev\01700000001\0";
+    // Root commit has empty parents field (`\0\0`); timestamps via concat to avoid `\0NN` octal.
+    let raw = concat!(
+        "aaa\0\0(HEAD -> main)\0init\0Dev\0",
+        "1700000000\0",
+        "bbb\0aaa\0\0second\0Dev\0",
+        "1700000001\0",
+    );
     let commits = parse_log(raw);
     assert_eq!(commits.len(), 2);
     let rows = layout_graph(&commits);

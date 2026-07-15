@@ -85,8 +85,7 @@ pub fn log_commits_local(dir: &Path, limit: usize) -> Option<String> {
             "--date-order",
             "-n",
             &limit_str,
-            "--pretty=format:%H\x00%P\x00%d\x00%s\x00%an\x00%at\x00",
-            "--encoding=UTF-8",
+            "--pretty=format:%H%x00%P%x00%d%x00%s%x00%an%x00%at%x00",
         ],
     )
 }
@@ -99,8 +98,7 @@ pub fn log_commits(dir: &Path, limit: usize, branch: Option<&str>) -> Option<Str
         "--date-order",
         "-n",
         &limit_str,
-        "--pretty=format:%H\x00%P\x00%d\x00%s\x00%an\x00%at\x00",
-        "--encoding=UTF-8",
+        "--pretty=format:%H%x00%P%x00%d%x00%s%x00%an%x00%at%x00",
     ];
     if let Some(b) = branch {
         args.push(b);
@@ -144,12 +142,13 @@ mod tests {
             .current_dir(tmp.path())
             .output()
             .unwrap();
-        StdCommand::new("git")
+        let commit = StdCommand::new("git")
             .args(["commit", "-m", "initial"])
             .current_dir(tmp.path())
             .output()
             .unwrap();
-        let out = log_commits(tmp.path(), 10, None).unwrap();
+        assert!(commit.status.success(), "git commit failed");
+        let out = log_commits(tmp.path(), 10, None).expect("git log failed");
         assert!(out.contains("initial"));
     }
 }

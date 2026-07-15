@@ -1,10 +1,22 @@
 use std::path::Path;
 use std::process::{Command, Stdio};
 
+/// Host null device: `/dev/null` on Unix, `NUL` on Windows (git rejects `/dev/null` there).
+#[cfg(windows)]
+const NULL_DEVICE: &str = "NUL";
+#[cfg(not(windows))]
+const NULL_DEVICE: &str = "/dev/null";
+
 /// Build a hardened read-only `git` command rooted at `dir`.
+///
+/// Uses `-c` overrides (not `GIT_CONFIG_*` env vars) so empty values never trip
+/// "missing config value" on Windows / Git for Windows.
 pub fn git_command(dir: &Path, args: &[&str]) -> Command {
     let mut cmd = Command::new("git");
     cmd.current_dir(dir)
+        .args(["-c", "core.fsmonitor=false"])
+        .args(["-c", &format!("core.hooksPath={NULL_DEVICE}")])
+        .args(["-c", "diff.external="])
         .args(args)
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
@@ -16,13 +28,7 @@ pub fn git_command(dir: &Path, args: &[&str]) -> Command {
         .env_remove("GIT_ALTERNATE_OBJECT_DIRECTORIES")
         .env_remove("GIT_CEILING_DIRECTORIES")
         .env_remove("GIT_DISCOVERY_ACROSS_FILESYSTEM")
-        .env("GIT_CONFIG_COUNT", "3")
-        .env("GIT_CONFIG_KEY_0", "core.hooksPath")
-        .env("GIT_CONFIG_VALUE_0", "/dev/null")
-        .env("GIT_CONFIG_KEY_1", "core.fsmonitor")
-        .env("GIT_CONFIG_VALUE_1", "")
-        .env("GIT_CONFIG_KEY_2", "diff.external")
-        .env("GIT_CONFIG_VALUE_2", "");
+        .env("GIT_OPTIONAL_LOCKS", "0");
     cmd
 }
 

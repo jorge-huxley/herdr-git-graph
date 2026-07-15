@@ -1,7 +1,12 @@
 use super::model::CommitNode;
 
 pub fn parse_log(raw: &str) -> Vec<CommitNode> {
-    let fields: Vec<&str> = raw.split('\0').filter(|s| !s.is_empty()).collect();
+    // Keep empty fields (e.g. root commits with no parents produce `\0\0` between hash and refs).
+    // Only drop a trailing empty from the final terminator `\0`.
+    let mut fields: Vec<&str> = raw.split('\0').collect();
+    while fields.last().is_some_and(|s| s.is_empty()) {
+        fields.pop();
+    }
     let mut commits = Vec::new();
     for chunk in fields.chunks(6) {
         if chunk.len() < 6 {
@@ -49,7 +54,11 @@ mod tests {
     #[test]
     fn parses_null_delimited_records() {
         let raw = "abc123\0def456\0(HEAD -> main)\0Fix bug\0Alice\01700000000\0";
-        let commits = parse_log(raw);
+        // Avoid Rust octal escapes: `\017` is one char — use concat for timestamps.
+        let raw = concat!(
+            "abc123\0def456\0(HEAD -> main)\0Fix bug\0Alice\0",
+            "1700000000\0"
+        );
         assert_eq!(commits.len(), 1);
         assert_eq!(commits[0].hash, "abc123");
         assert_eq!(commits[0].parents, vec!["def456"]);

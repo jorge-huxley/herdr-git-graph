@@ -34,10 +34,8 @@ pub fn load_config() -> Config {
             }
         }
     }
-    if cfg.delta_command.is_none() {
-        if which::which("delta").is_ok() {
-            cfg.delta_command = Some("delta".to_string());
-        }
+    if cfg.delta_command.is_none() && which::which("delta").is_ok() {
+        cfg.delta_command = Some("delta".to_string());
     }
     cfg
 }

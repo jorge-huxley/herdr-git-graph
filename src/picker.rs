@@ -1,17 +1,8 @@
+#[derive(Default)]
 pub struct PickerState {
     pub open: bool,
     pub items: Vec<String>,
     pub cursor: usize,
-}
-
-impl Default for PickerState {
-    fn default() -> Self {
-        Self {
-            open: false,
-            items: Vec::new(),
-            cursor: 0,
-        }
-    }
 }
 
 impl PickerState {

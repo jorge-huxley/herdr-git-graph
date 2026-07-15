@@ -1,11 +1,6 @@
+#[derive(Default)]
 pub struct HelpState {
     pub open: bool,
-}
-
-impl Default for HelpState {
-    fn default() -> Self {
-        Self { open: false }
-    }
 }
 
 impl HelpState {

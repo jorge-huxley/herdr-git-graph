@@ -1,21 +1,11 @@
 use crate::graph::GraphRow;
 
+#[derive(Default)]
 pub struct FinderState {
     pub open: bool,
     pub query: String,
     pub matches: Vec<usize>,
     pub cursor: usize,
-}
-
-impl Default for FinderState {
-    fn default() -> Self {
-        Self {
-            open: false,
-            query: String::new(),
-            matches: Vec::new(),
-            cursor: 0,
-        }
-    }
 }
 
 impl FinderState {

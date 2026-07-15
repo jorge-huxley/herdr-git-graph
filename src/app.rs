@@ -60,11 +60,13 @@ fn event_loop(
                         }
                     }
                     if let Some(intent) = input::map_key(key) {
-                        if matches!(ctrl.modal, crate::controller::Modal::BranchPicker | crate::controller::Modal::Search)
-                            && key.code == KeyCode::Enter
-                        {
-                            ctrl.handle(Intent::Confirm);
-                        } else if matches!(intent, Intent::Confirm) {
+                        let confirm = matches!(intent, Intent::Confirm)
+                            || (matches!(
+                                ctrl.modal,
+                                crate::controller::Modal::BranchPicker
+                                    | crate::controller::Modal::Search
+                            ) && key.code == KeyCode::Enter);
+                        if confirm {
                             ctrl.handle(Intent::Confirm);
                         } else if matches!(intent, Intent::Cancel)
                             && matches!(ctrl.modal, crate::controller::Modal::None)

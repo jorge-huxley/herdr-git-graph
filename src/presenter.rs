@@ -1,7 +1,7 @@
 use crate::controller::{Controller, Modal};
 use crate::input::help_text;
 use ratatui::layout::{Constraint, Direction, Layout, Rect};
-use ratatui::style::{Color, Modifier, Style, Stylize};
+use ratatui::style::{Color, Modifier, Style};
 use ratatui::widgets::{Block, Borders, Clear, List, ListItem, Paragraph, Wrap};
 use ratatui::Frame;
 
@@ -128,7 +128,7 @@ fn draw_picker(frame: &mut Frame, ctrl: &Controller, area: Rect, title: &str) {
         .enumerate()
         .map(|(i, item)| {
             let style = if i == ctrl.picker.cursor {
-                Style::default().reverse()
+                Style::default().add_modifier(Modifier::REVERSED)
             } else {
                 Style::default()
             };
@@ -170,7 +170,7 @@ fn draw_search(frame: &mut Frame, ctrl: &Controller, area: Rect) {
         .map(|(i, &row_idx)| {
             let row = &ctrl.rows[row_idx];
             let style = if i == ctrl.finder.cursor {
-                Style::default().reverse()
+                Style::default().add_modifier(Modifier::REVERSED)
             } else {
                 Style::default()
             };

@@ -60,6 +60,7 @@ mod which {
             .output()
             .ok()
             .filter(|o| o.status.success())
+            .map(|_| ())
             .ok_or(())
     }
 }

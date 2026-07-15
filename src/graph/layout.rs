@@ -48,7 +48,7 @@ pub fn layout_graph(commits: &[CommitNode]) -> Vec<GraphRow> {
         // Parent lanes to activate after this row.
         let mut parent_lanes: Vec<usize> = Vec::new();
         for (pi, parent) in commit.parents.iter().enumerate() {
-            if let Some(&parent_idx) = id_to_idx.get(parent.as_str()) {
+            if id_to_idx.contains_key(parent.as_str()) {
                 let pl = if pi == 0 {
                     lane
                 } else {

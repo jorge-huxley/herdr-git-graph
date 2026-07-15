@@ -69,13 +69,15 @@ pub fn launch_decision_tab(pane_list_json: &str, pane_label: &str) -> String {
     }
 
     let focused_ws = workspace_of(focused);
-    if focused_ws.is_some()
-        && let Some(elsewhere) = panes
+    if let Some(ws) = focused_ws {
+        if let Some(elsewhere) = panes
             .iter()
-            .find(|p| is_viewer(p) && workspace_of(p) == focused_ws)
-        && let Some(tab) = elsewhere.tab_id.as_deref().filter(|t| is_flag_safe(t))
-    {
-        return format!("SWITCHTAB {tab}");
+            .find(|p| is_viewer(p) && workspace_of(p) == Some(ws))
+        {
+            if let Some(tab) = elsewhere.tab_id.as_deref().filter(|t| is_flag_safe(t)) {
+                return format!("SWITCHTAB {tab}");
+            }
+        }
     }
     "OPEN".to_string()
 }

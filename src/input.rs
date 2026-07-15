@@ -6,14 +6,14 @@ pub fn map_key(event: KeyEvent) -> Option<Intent> {
         (KeyCode::Char('q'), _) | (KeyCode::Esc, _) => Some(Intent::Cancel),
         (KeyCode::Char('j'), _) | (KeyCode::Down, _) => Some(Intent::MoveDown),
         (KeyCode::Char('k'), _) | (KeyCode::Up, _) => Some(Intent::MoveUp),
+        (KeyCode::Char('u'), KeyModifiers::CONTROL) => Some(Intent::ScrollDetailsUp),
+        (KeyCode::Char('d'), KeyModifiers::CONTROL) => Some(Intent::ScrollDetailsDown),
         (KeyCode::Char('d'), _) | (KeyCode::Enter, _) => Some(Intent::ToggleDiff),
         (KeyCode::Char('b'), _) => Some(Intent::BranchPicker),
         (KeyCode::Char('/'), _) => Some(Intent::Search),
         (KeyCode::Char('?'), _) => Some(Intent::Help),
         (KeyCode::PageDown, _) => Some(Intent::PageDown),
         (KeyCode::PageUp, _) => Some(Intent::PageUp),
-        (KeyCode::Char('u'), KeyModifiers::CONTROL) => Some(Intent::ScrollDetailsUp),
-        (KeyCode::Char('d'), KeyModifiers::CONTROL) => Some(Intent::ScrollDetailsDown),
         _ => None,
     }
 }

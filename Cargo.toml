@@ -1,0 +1,28 @@
+[package]
+name = "herdr-git-graph"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.70"
+description = "A read-only git commit graph TUI for Herdr"
+license = "MIT"
+readme = "README.md"
+
+[lib]
+name = "herdr_git_graph"
+path = "src/lib.rs"
+
+[[bin]]
+name = "herdr-git-graph"
+path = "src/main.rs"
+
+[dependencies]
+ratatui = "0.29"
+crossterm = "0.28"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+toml = { version = "0.8", features = ["parse"] }
+chrono = "0.4"
+unicode-width = "0.2"
+
+[dev-dependencies]
+tempfile = "3"

@@ -1,0 +1,54 @@
+id = "herdr-git-graph"
+name = "herdr-git-graph"
+version = "0.1.0"
+description = "A read-only git commit graph TUI in a Herdr split pane."
+min_herdr_version = "0.7.0"
+platforms = ["linux", "macos", "windows"]
+
+[[build]]
+platforms = ["linux", "macos"]
+command = ["/bin/sh", "scripts/fetch-or-build.sh"]
+
+[[build]]
+platforms = ["windows"]
+command = ["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "scripts/fetch-or-build.ps1"]
+
+[[panes]]
+id = "git-graph"
+title = "Git Graph"
+placement = "split"
+command = ["./target/release/herdr-git-graph"]
+
+[[actions]]
+id = "open-git-graph"
+platforms = ["linux", "macos"]
+title = "Open git graph"
+description = "Open the read-only git commit graph in a split pane beside the current work."
+command = ["bash", "scripts/open-git-graph.sh"]
+
+[[actions]]
+id = "open-git-graph-windows"
+platforms = ["windows"]
+title = "Open git graph"
+description = "Open the read-only git commit graph in a split pane beside the current work."
+command = [
+  "powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command",
+  '''$b=$env:HERDR_BIN_PATH; if(-not $b){$b='herdr'}; $p=((& $b plugin list --json|ConvertFrom-Json).result.plugins|?{$_.plugin_id -eq 'herdr-git-graph'}).plugin_root; if($p -and $p.StartsWith('\\?\')){$p=$p.Substring(4)}; & (Join-Path (Join-Path $p 'scripts') 'open-git-graph.ps1')''',
+]
+
+[[actions]]
+id = "open-git-graph-tab"
+platforms = ["linux", "macos"]
+title = "Open git graph (tab)"
+description = "Open the read-only git commit graph in its own tab."
+command = ["bash", "scripts/open-git-graph-tab.sh"]
+
+[[actions]]
+id = "open-git-graph-tab-windows"
+platforms = ["windows"]
+title = "Open git graph (tab)"
+description = "Open the read-only git commit graph in its own tab."
+command = [
+  "powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command",
+  '''$b=$env:HERDR_BIN_PATH; if(-not $b){$b='herdr'}; $p=((& $b plugin list --json|ConvertFrom-Json).result.plugins|?{$_.plugin_id -eq 'herdr-git-graph'}).plugin_root; if($p -and $p.StartsWith('\\?\')){$p=$p.Substring(4)}; & (Join-Path (Join-Path $p 'scripts') 'open-git-graph-tab.ps1')''',
+]

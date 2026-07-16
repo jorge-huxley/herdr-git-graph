@@ -106,7 +106,7 @@ impl Controller {
             Intent::MoveDown => self.move_selection(1),
             Intent::PageUp => self.move_selection(-10),
             Intent::PageDown => self.move_selection(10),
-            Intent::ToggleDetailsPane => self.toggle_details_pane(),
+            Intent::ToggleDetailsPane => self.open_details_pane(),
             Intent::ToggleDiff => self.toggle_diff(),
             Intent::BranchPicker => self.open_branch_picker(),
             Intent::Search => {
@@ -132,10 +132,10 @@ impl Controller {
                 }
             }
             Intent::Cancel => {
+                // Esc dismisses the details pane only. `q` quits. Avoids terminal
+                // double-Esc closing the pane then immediately quitting.
                 if self.show_details_pane {
                     self.close_details_pane();
-                } else {
-                    self.should_quit = true;
                 }
             }
             Intent::Quit => self.should_quit = true,
@@ -210,11 +210,9 @@ impl Controller {
         }
     }
 
-    fn toggle_details_pane(&mut self) {
-        if self.show_details_pane && !self.show_diff {
-            self.close_details_pane();
-            return;
-        }
+    /// Open the details pane (or switch from diff → details). Closing is Esc-only
+    /// so a stale "open" flag after Herdr eats Esc cannot invert the next Enter.
+    fn open_details_pane(&mut self) {
         self.show_details_pane = true;
         self.show_diff = false;
         self.details_scroll = 0;
@@ -230,19 +228,17 @@ impl Controller {
     }
 
     fn toggle_diff(&mut self) {
-        if !self.show_details_pane {
+        if !self.show_details_pane || !self.show_diff {
+            // Open (or switch to) diff.
             self.show_details_pane = true;
             self.show_diff = true;
             self.details_scroll = 0;
             self.refresh_details();
             return;
         }
-        self.show_diff = !self.show_diff;
-        if self.show_diff {
-            self.load_diff();
-        } else {
-            self.refresh_details();
-        }
+        // Already showing diff → go back to details (Esc closes fully).
+        self.show_diff = false;
+        self.refresh_details();
     }
 
     fn open_branch_picker(&mut self) {

@@ -4,7 +4,7 @@ pub enum Intent {
     MoveDown,
     PageUp,
     PageDown,
-    ToggleDetailsPane,
+    ToggleDetailsPane, // open commit details (idempotent; Esc closes)
     ToggleDiff,
     BranchPicker,
     Search,

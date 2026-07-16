@@ -1,4 +1,4 @@
-# open-git-graph-tab.ps1 — Windows launcher for tab git graph.
+# open-git-graph-tab.ps1 - Windows launcher for tab git graph.
 $ErrorActionPreference = 'Continue'
 
 $HerdrBin = if ($env:HERDR_BIN_PATH) { $env:HERDR_BIN_PATH } else { 'herdr' }

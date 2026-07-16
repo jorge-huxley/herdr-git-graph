@@ -1,4 +1,4 @@
-# fetch-or-build.ps1 — herdr [[build]] step for herdr-git-graph (Windows).
+# fetch-or-build.ps1 - herdr [[build]] step for herdr-git-graph (Windows).
 $ErrorActionPreference = 'Stop'
 
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
@@ -23,7 +23,7 @@ function Build-FromSource {
 }
 
 function Fallback([string]$Reason) {
-  Write-Host "herdr-git-graph: $Reason — building from source instead." -ForegroundColor Yellow
+  Write-Host "herdr-git-graph: $Reason - building from source instead." -ForegroundColor Yellow
   Build-FromSource
 }
 

@@ -16,7 +16,7 @@ have() { command -v "$1" >/dev/null 2>&1; }
 build_from_source() {
   [ -f "$HOME/.cargo/env" ] && . "$HOME/.cargo/env"
   if ! have cargo; then
-    echo "herdr-git-graph needs Rust to build, but cargo was not found. Install from https://rustup.rs then re-run: herdr plugin install owner/herdr-git-graph" >&2
+    echo "herdr-git-graph needs Rust to build, but cargo was not found. Install from https://rustup.rs then re-run: herdr plugin install jorge-huxley/herdr-git-graph" >&2
     exit 1
   fi
   exec cargo build --release

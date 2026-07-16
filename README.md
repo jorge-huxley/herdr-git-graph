@@ -16,39 +16,64 @@ A read-only git commit graph TUI for [Herdr](https://herdr.dev). Opens in a spli
 - [Herdr](https://herdr.dev) 0.7.0+
 - Git on `PATH`
 - Optional: [delta](https://github.com/dandavison/delta) for styled diffs
+- Rust 1.70+ only when a prebuilt binary is unavailable for your platform
 
-## Install
+## Install and run
+
+Install the plugin from this public GitHub repository:
 
 ```bash
 herdr plugin install jorge-huxley/herdr-git-graph
 ```
 
-For local development:
+Herdr shows the plugin manifest and commands for review before installation. The
+installer downloads a SHA-256-verified prebuilt binary when one is available and
+otherwise builds from source with Cargo.
+
+Run it directly from a Herdr session:
 
 ```bash
-herdr plugin link /path/to/herdr-git-graph
-cargo build --release
+# Linux and macOS
+herdr plugin action invoke open-git-graph --plugin herdr-git-graph
+
+# Windows
+herdr plugin action invoke open-git-graph-windows --plugin herdr-git-graph
 ```
 
-## Keybinding
-
-Add to `~/.config/herdr/config.toml`:
+For frequent use, add one or both actions to your Herdr `config.toml`. Run
+`herdr --help` to see its location on your platform.
 
 ```toml
+# Open in a split pane (Linux and macOS).
 [[keys.command]]
 key = "prefix+g"
 type = "shell"
 command = "herdr plugin action invoke open-git-graph --plugin herdr-git-graph"
 
+# Open in its own tab (Linux and macOS).
 [[keys.command]]
 key = "prefix+shift+g"
 type = "shell"
 command = "herdr plugin action invoke open-git-graph-tab --plugin herdr-git-graph"
 ```
 
-On Windows, bind the `-windows` action ids (`open-git-graph-windows`, `open-git-graph-tab-windows`).
+On Windows, use `open-git-graph-windows` and
+`open-git-graph-tab-windows` instead. Then reload the configuration:
 
-Run `herdr server reload-config`, then press your key.
+```bash
+herdr config check
+herdr server reload-config
+```
+
+Open a Git repository in Herdr and press the configured key. Invoking the same
+action again focuses the existing graph; invoking it while focused closes it.
+
+## Local development
+
+```bash
+herdr plugin link /path/to/herdr-git-graph
+cargo build --release
+```
 
 ## Keys
 

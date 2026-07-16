@@ -58,7 +58,8 @@ try {
   Fallback "checksums not available for v$version"
 }
 
-$expected = (Select-String -Path $tmpsums -Pattern "^[0-9a-f]{64} [ *]$asset\$" | Select-Object -First 1).Line
+$checksumPattern = '^[0-9a-f]{64} [ *]' + [regex]::Escape($asset) + '$'
+$expected = (Select-String -Path $tmpsums -Pattern $checksumPattern | Select-Object -First 1).Line
 if (-not $expected) { Fallback "no checksum listed for $asset" }
 $expectedHash = ($expected -split '\s+')[0]
 

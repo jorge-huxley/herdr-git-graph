@@ -80,12 +80,14 @@ cargo build --release
 | Key | Action |
 | --- | --- |
 | `j` / `k` or arrows | Move selection |
-| `Enter` / `d` | Toggle diff view |
+| `Enter` | Toggle commit details pane |
+| `d` | Open / toggle commit diff |
 | `b` | Branch filter picker |
 | `/` | Search commits |
 | `Ctrl-u` / `Ctrl-d` | Scroll details/diff |
 | `?` | Help |
-| `q` / `Esc` | Close |
+| `Esc` | Close pane, or quit if pane closed |
+| `q` | Quit |
 
 ## Configuration
 

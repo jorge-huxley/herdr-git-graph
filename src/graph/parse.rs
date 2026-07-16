@@ -38,12 +38,12 @@ pub fn parse_log(raw: &str) -> Vec<CommitNode> {
 }
 
 fn parse_refs(raw: &str) -> Vec<String> {
+    // Keep "HEAD -> branch" and "tag: name" as-is for badge styling.
     raw.trim()
         .trim_matches(|c| c == '(' || c == ')')
         .split(',')
         .map(|s| s.trim().to_string())
         .filter(|s| !s.is_empty())
-        .map(|s| s.trim_start_matches("HEAD -> ").to_string())
         .collect()
 }
 
@@ -62,7 +62,7 @@ mod tests {
         assert_eq!(commits.len(), 1);
         assert_eq!(commits[0].hash, "abc123");
         assert_eq!(commits[0].parents, vec!["def456"]);
-        assert_eq!(commits[0].refs, vec!["main"]);
+        assert_eq!(commits[0].refs, vec!["HEAD -> main"]);
         assert_eq!(commits[0].subject, "Fix bug");
     }
 }

@@ -4,6 +4,7 @@ pub enum Intent {
     MoveDown,
     PageUp,
     PageDown,
+    ToggleDetailsPane,
     ToggleDiff,
     BranchPicker,
     Search,

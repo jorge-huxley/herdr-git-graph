@@ -68,10 +68,6 @@ fn event_loop(
                             ) && key.code == KeyCode::Enter);
                         if confirm {
                             ctrl.handle(Intent::Confirm);
-                        } else if matches!(intent, Intent::Cancel)
-                            && matches!(ctrl.modal, crate::controller::Modal::None)
-                        {
-                            ctrl.should_quit = true;
                         } else {
                             ctrl.handle(intent);
                         }

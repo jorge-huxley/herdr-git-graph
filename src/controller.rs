@@ -26,6 +26,8 @@ pub struct Controller {
     pub rows: Vec<GraphRow>,
     pub selected: usize,
     pub details_scroll: u16,
+    /// Right-hand commit pane (details/diff). Hidden until opened deliberately.
+    pub show_details_pane: bool,
     pub show_diff: bool,
     pub details_text: String,
     pub diff_text: String,
@@ -56,6 +58,7 @@ impl Controller {
             rows: Vec::new(),
             selected: 0,
             details_scroll: 0,
+            show_details_pane: false,
             show_diff: false,
             details_text: String::new(),
             diff_text: String::new(),
@@ -103,6 +106,7 @@ impl Controller {
             Intent::MoveDown => self.move_selection(1),
             Intent::PageUp => self.move_selection(-10),
             Intent::PageDown => self.move_selection(10),
+            Intent::ToggleDetailsPane => self.toggle_details_pane(),
             Intent::ToggleDiff => self.toggle_diff(),
             Intent::BranchPicker => self.open_branch_picker(),
             Intent::Search => {
@@ -118,10 +122,23 @@ impl Controller {
                 };
             }
             Intent::ScrollDetailsUp => {
-                self.details_scroll = self.details_scroll.saturating_sub(1);
+                if self.show_details_pane {
+                    self.details_scroll = self.details_scroll.saturating_sub(1);
+                }
             }
-            Intent::ScrollDetailsDown => self.details_scroll = self.details_scroll.saturating_add(1),
-            Intent::Quit | Intent::Cancel => self.should_quit = true,
+            Intent::ScrollDetailsDown => {
+                if self.show_details_pane {
+                    self.details_scroll = self.details_scroll.saturating_add(1);
+                }
+            }
+            Intent::Cancel => {
+                if self.show_details_pane {
+                    self.close_details_pane();
+                } else {
+                    self.should_quit = true;
+                }
+            }
+            Intent::Quit => self.should_quit = true,
             _ => {}
         }
     }
@@ -188,13 +205,43 @@ impl Controller {
         let next = (self.selected as i32 + delta).clamp(0, len - 1);
         self.selected = next as usize;
         self.details_scroll = 0;
+        if self.show_details_pane {
+            self.refresh_details();
+        }
+    }
+
+    fn toggle_details_pane(&mut self) {
+        if self.show_details_pane && !self.show_diff {
+            self.close_details_pane();
+            return;
+        }
+        self.show_details_pane = true;
+        self.show_diff = false;
+        self.details_scroll = 0;
         self.refresh_details();
     }
 
+    fn close_details_pane(&mut self) {
+        self.show_details_pane = false;
+        self.show_diff = false;
+        self.details_scroll = 0;
+        self.details_text.clear();
+        self.diff_text.clear();
+    }
+
     fn toggle_diff(&mut self) {
+        if !self.show_details_pane {
+            self.show_details_pane = true;
+            self.show_diff = true;
+            self.details_scroll = 0;
+            self.refresh_details();
+            return;
+        }
         self.show_diff = !self.show_diff;
         if self.show_diff {
             self.load_diff();
+        } else {
+            self.refresh_details();
         }
     }
 
@@ -240,10 +287,18 @@ impl Controller {
             self.rows.len(),
             self.filter.label()
         );
-        self.refresh_details();
+        if self.show_details_pane {
+            self.refresh_details();
+        } else {
+            self.details_text.clear();
+            self.diff_text.clear();
+        }
     }
 
     fn refresh_details(&mut self) {
+        if !self.show_details_pane {
+            return;
+        }
         if let Some(row) = self.rows.get(self.selected) {
             self.details_text = format_commit_details(&self.repo, &row.hash);
             if self.show_diff {

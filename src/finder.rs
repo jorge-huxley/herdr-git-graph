@@ -54,7 +54,8 @@ impl FinderState {
             .filter(|(_, r)| {
                 r.subject.to_lowercase().contains(&q)
                     || r.hash.to_lowercase().contains(&q)
-                    || r.refs.to_lowercase().contains(&q)
+                    || r.author.to_lowercase().contains(&q)
+                    || r.refs.iter().any(|rf| rf.to_lowercase().contains(&q))
             })
             .map(|(i, _)| i)
             .collect();

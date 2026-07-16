@@ -8,7 +8,8 @@ pub fn map_key(event: KeyEvent) -> Option<Intent> {
         (KeyCode::Char('k'), _) | (KeyCode::Up, _) => Some(Intent::MoveUp),
         (KeyCode::Char('u'), KeyModifiers::CONTROL) => Some(Intent::ScrollDetailsUp),
         (KeyCode::Char('d'), KeyModifiers::CONTROL) => Some(Intent::ScrollDetailsDown),
-        (KeyCode::Char('d'), _) | (KeyCode::Enter, _) => Some(Intent::ToggleDiff),
+        (KeyCode::Enter, _) => Some(Intent::ToggleDetailsPane),
+        (KeyCode::Char('d'), _) => Some(Intent::ToggleDiff),
         (KeyCode::Char('b'), _) => Some(Intent::BranchPicker),
         (KeyCode::Char('/'), _) => Some(Intent::Search),
         (KeyCode::Char('?'), _) => Some(Intent::Help),
@@ -20,10 +21,12 @@ pub fn map_key(event: KeyEvent) -> Option<Intent> {
 
 pub fn help_text() -> &'static str {
     "j/k or arrows  move selection\n\
-     Enter/d        show commit diff\n\
+     Enter          toggle commit details\n\
+     d              toggle commit diff\n\
      b              branch filter\n\
      /              search commits\n\
-     Ctrl-u/d       scroll details\n\
+     Ctrl-u/d       scroll details/diff\n\
      ?              this help\n\
-     q/Esc          close"
+     Esc            close pane / quit\n\
+     q              quit"
 }

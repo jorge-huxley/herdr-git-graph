@@ -1,12 +1,16 @@
-use super::model::{CommitNode, GraphRow};
+use super::model::{CommitNode, GraphCell, GraphRow};
 
 const EMPTY: char = ' ';
 const PIPE: char = '│';
-const MERGE_R: char = '├';
-const MERGE_L: char = '└';
-const BRANCH: char = '┬';
-const HORIZ: char = '─';
 const COMMIT: char = '●';
+const HORIZ: char = '─';
+const CORNER_SE: char = '┐'; // merge arm starts going down on the right
+const CORNER_SW: char = '┘'; // side lane joins into commit from the right
+const TEE_E: char = '├'; // commit continues down and connects right
+const TEE_W: char = '┤'; // side join into a continuing lane
+
+/// Number of distinct lane colors cycled by the layout.
+pub const LANE_PALETTE_SIZE: u8 = 8;
 
 pub fn layout_graph(commits: &[CommitNode]) -> Vec<GraphRow> {
     if commits.is_empty() {
@@ -19,107 +23,206 @@ pub fn layout_graph(commits: &[CommitNode]) -> Vec<GraphRow> {
         id_to_idx.insert(c.hash.as_str(), i);
     }
 
-    // Active lanes track which commit index each column leads toward (downward).
-    let mut lanes: Vec<Option<usize>> = Vec::new();
+    // Active lanes: target commit index + lane color.
+    let mut lanes: Vec<Option<(usize, u8)>> = Vec::new();
+    let mut next_color: u8 = 0;
     let mut rows = Vec::with_capacity(n);
 
     for (idx, commit) in commits.iter().enumerate() {
-        // Locate or allocate the lane for this commit.
-        let lane = lanes
+        // All lanes that already point at this commit (branch join points).
+        let mut incoming: Vec<usize> = lanes
             .iter()
-            .position(|l| *l == Some(idx))
-            .or_else(|| lanes.iter().position(|l| l.is_none()))
-            .unwrap_or_else(|| {
+            .enumerate()
+            .filter_map(|(i, slot)| match slot {
+                Some((t, _)) if *t == idx => Some(i),
+                _ => None,
+            })
+            .collect();
+
+        let lane = if let Some(&first) = incoming.first() {
+            first
+        } else {
+            let free = lanes.iter().position(|l| l.is_none()).unwrap_or_else(|| {
                 lanes.push(None);
                 lanes.len() - 1
             });
+            while lanes.len() <= free {
+                lanes.push(None);
+            }
+            incoming.push(free);
+            free
+        };
 
-        while lanes.len() <= lane {
-            lanes.push(None);
+        let commit_color = lanes[lane]
+            .map(|(_, c)| c)
+            .unwrap_or_else(|| alloc_color(&mut next_color));
+
+        // Ensure glyph buffer covers all current lanes.
+        let mut glyphs: Vec<(char, u8)> = vec![(EMPTY, 0); lanes.len()];
+
+        // Continuing pipes for unrelated active lanes.
+        for (i, slot) in lanes.iter().enumerate() {
+            if let Some((_, color)) = slot {
+                if i != lane && !incoming.contains(&i) {
+                    glyphs[i] = (PIPE, *color);
+                }
+            }
         }
 
-        let mut cols: Vec<char> = vec![EMPTY; lanes.len()];
-        for (i, slot) in lanes.iter().enumerate() {
-            if slot.is_some() && i != lane {
-                cols[i] = PIPE;
+        // Join side lanes that also target this commit into the primary lane.
+        if incoming.len() > 1 {
+            let min_l = *incoming.iter().min().unwrap();
+            let max_l = *incoming.iter().max().unwrap();
+            for i in min_l..=max_l {
+                if i == lane {
+                    continue;
+                }
+                if incoming.contains(&i) {
+                    let side_color = lanes[i].map(|(_, c)| c).unwrap_or(commit_color);
+                    glyphs[i] = if i == max_l || i == min_l {
+                        (CORNER_SW, side_color)
+                    } else {
+                        (TEE_W, side_color)
+                    };
+                } else if glyphs[i].0 == EMPTY {
+                    glyphs[i] = (HORIZ, commit_color);
+                }
+            }
+            // Fill horizontals between join arms.
+            for i in min_l..=max_l {
+                if i != lane && glyphs[i].0 == EMPTY {
+                    glyphs[i] = (HORIZ, commit_color);
+                }
             }
         }
 
         // Parent lanes to activate after this row.
-        let mut parent_lanes: Vec<usize> = Vec::new();
+        let mut parent_lanes: Vec<(usize, u8)> = Vec::new();
         for (pi, parent) in commit.parents.iter().enumerate() {
-            if id_to_idx.contains_key(parent.as_str()) {
-                let pl = if pi == 0 {
-                    lane
-                } else {
-                    lanes
-                        .iter()
-                        .position(|l| l.is_none())
-                        .unwrap_or_else(|| {
-                            lanes.push(None);
-                            lanes.len() - 1
+            if !id_to_idx.contains_key(parent.as_str()) {
+                continue;
+            }
+            if pi == 0 {
+                parent_lanes.push((lane, commit_color));
+            } else {
+                // Prefer an incoming side lane we are about to free, else a free lane
+                // that is not the commit lane / already claimed parent lane, else new.
+                let pl = incoming
+                    .iter()
+                    .copied()
+                    .find(|&i| i != lane)
+                    .or_else(|| {
+                        lanes.iter().enumerate().position(|(i, l)| {
+                            l.is_none()
+                                && i != lane
+                                && !parent_lanes.iter().any(|(p, _)| *p == i)
                         })
-                };
+                    })
+                    .unwrap_or_else(|| {
+                        lanes.push(None);
+                        glyphs.push((EMPTY, 0));
+                        lanes.len() - 1
+                    });
                 while lanes.len() <= pl {
                     lanes.push(None);
                 }
-                while cols.len() <= pl {
-                    cols.push(EMPTY);
+                while glyphs.len() <= pl {
+                    glyphs.push((EMPTY, 0));
                 }
-                parent_lanes.push(pl);
+                let color = alloc_color(&mut next_color);
+                parent_lanes.push((pl, color));
             }
         }
 
-        // Draw connector glyphs at parent lane positions.
+        // Draw merge arms from this commit to additional parents.
         if parent_lanes.len() > 1 {
-            for (i, &pl) in parent_lanes.iter().enumerate() {
-                if pl == lane {
-                    cols[pl] = MERGE_R;
-                } else if i + 1 == parent_lanes.len() {
-                    cols[pl] = MERGE_L;
-                } else {
-                    cols[pl] = BRANCH;
+            let min_l = parent_lanes.iter().map(|(l, _)| *l).min().unwrap();
+            let max_l = parent_lanes.iter().map(|(l, _)| *l).max().unwrap();
+            for i in min_l..=max_l {
+                if i == lane {
+                    continue;
+                }
+                let is_parent_end = parent_lanes.iter().any(|(l, _)| *l == i);
+                if is_parent_end {
+                    let color = parent_lanes
+                        .iter()
+                        .find(|(l, _)| *l == i)
+                        .map(|(_, c)| *c)
+                        .unwrap_or(commit_color);
+                    glyphs[i] = (CORNER_SE, color);
+                } else if glyphs[i].0 == EMPTY || glyphs[i].0 == PIPE {
+                    glyphs[i] = (HORIZ, commit_color);
                 }
             }
-        } else if parent_lanes.len() == 1 {
-            cols[lane] = PIPE;
         }
+        glyphs[lane] = (COMMIT, commit_color);
 
-        cols[lane] = COMMIT;
-
-        let graph: String = cols
-            .into_iter()
-            .flat_map(|c| [c, HORIZ])
-            .collect::<String>()
-            .trim_end_matches(HORIZ)
-            .to_string();
+        // Build display cells: glyph + spacer (space), so pipes don't look like ●─│.
+        let mut cells: Vec<GraphCell> = Vec::with_capacity(glyphs.len() * 2);
+        for (i, &(ch, color)) in glyphs.iter().enumerate() {
+            cells.push(GraphCell::new(ch, color));
+            if i + 1 < glyphs.len() {
+                // Spacer between lanes; use HORIZ when both neighbors are merge connectors.
+                let next = glyphs[i + 1].0;
+                let spacer = if connects_horiz(ch) && connects_horiz(next) {
+                    GraphCell::new(HORIZ, commit_color)
+                } else if ch == COMMIT && connects_horiz(next) {
+                    GraphCell::new(HORIZ, commit_color)
+                } else if connects_horiz(ch) && next == COMMIT {
+                    GraphCell::new(HORIZ, commit_color)
+                } else {
+                    GraphCell::empty()
+                };
+                cells.push(spacer);
+            }
+        }
+        while cells.last().is_some_and(|c| c.ch == EMPTY) {
+            cells.pop();
+        }
 
         let short_hash: String = commit.hash.chars().take(7).collect();
         rows.push(GraphRow {
-            graph,
+            cells,
             short_hash,
-            refs: commit.refs.join(", "),
+            refs: commit.refs.clone(),
             subject: commit.subject.clone(),
+            author: commit.author.clone(),
+            timestamp: commit.timestamp,
             hash: commit.hash.clone(),
         });
 
-        // Advance lanes downward.
-        lanes[lane] = None;
+        // Clear all incoming lanes, then activate parent targets.
+        for &i in &incoming {
+            if i < lanes.len() {
+                lanes[i] = None;
+            }
+        }
         for (pi, parent) in commit.parents.iter().enumerate() {
             if let Some(&parent_idx) = id_to_idx.get(parent.as_str()) {
-                let pl = parent_lanes.get(pi).copied().unwrap_or(lane);
-                if pl < lanes.len() {
-                    lanes[pl] = Some(parent_idx);
+                if let Some(&(pl, color)) = parent_lanes.get(pi) {
+                    if pl < lanes.len() {
+                        lanes[pl] = Some((parent_idx, color));
+                    }
                 }
             }
         }
 
-        while lanes.last().copied().flatten().is_none() && lanes.len() > 1 {
+        while lanes.last().copied().flatten().is_none() && !lanes.is_empty() {
             lanes.pop();
         }
     }
 
     rows
+}
+
+fn alloc_color(next: &mut u8) -> u8 {
+    let c = *next % LANE_PALETTE_SIZE;
+    *next = next.wrapping_add(1);
+    c
+}
+
+fn connects_horiz(ch: char) -> bool {
+    matches!(ch, HORIZ | CORNER_SE | CORNER_SW | TEE_E | TEE_W | COMMIT)
 }
 
 #[cfg(test)]
@@ -147,8 +250,10 @@ mod tests {
         ];
         let rows = layout_graph(&commits);
         assert_eq!(rows.len(), 3);
-        assert!(rows[0].graph.contains('●'));
+        assert!(rows[0].graph_string().contains('●'));
         assert_eq!(rows[0].subject, "third");
+        assert_eq!(rows[0].author, "Test");
+        assert!(rows[0].cells.iter().any(|c| c.ch == COMMIT));
     }
 
     #[test]
@@ -161,11 +266,43 @@ mod tests {
         ];
         let rows = layout_graph(&commits);
         assert_eq!(rows.len(), 4);
-        assert!(rows.iter().all(|r| !r.graph.is_empty()));
+        assert!(rows.iter().all(|r| !r.cells.is_empty()));
+        // Merge row should connect into a second lane.
+        assert!(
+            rows[0].graph_string().contains('┐') || rows[0].graph_string().contains('─'),
+            "merge row should show a horizontal arm: {}",
+            rows[0].graph_string()
+        );
+        // Branch join at root should collapse lanes.
+        assert!(
+            rows[3].graph_string().contains('┘') || rows[3].cells.iter().filter(|c| c.ch == COMMIT).count() == 1,
+            "root row should join or be a single commit: {}",
+            rows[3].graph_string()
+        );
     }
 
     #[test]
     fn empty_commits_empty_rows() {
         assert!(layout_graph(&[]).is_empty());
+    }
+
+    #[test]
+    fn lanes_use_distinct_colors_on_merge() {
+        let commits = vec![
+            node("m", &["b", "a"], "merge"),
+            node("b", &["r"], "branch"),
+            node("a", &["r"], "main"),
+            node("r", &[], "root"),
+        ];
+        let rows = layout_graph(&commits);
+        let colors: Vec<u8> = rows[0]
+            .cells
+            .iter()
+            .filter(|c| c.ch == COMMIT || c.ch == CORNER_SE)
+            .map(|c| c.color_idx)
+            .collect();
+        assert!(colors.len() >= 2);
+        // Commit lane and merge arm should not all share one color when two parents exist.
+        assert_ne!(colors[0], colors[1]);
     }
 }

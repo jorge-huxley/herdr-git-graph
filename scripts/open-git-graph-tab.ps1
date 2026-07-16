@@ -21,25 +21,26 @@ function Get-UserCwd {
   return $PluginRoot
 }
 
-function Get-PaneId([string]$json) {
-  return ([regex]'"pane_id":"([^"]+)"').Match($json).Groups[1].Value
-}
-
-function Get-TabId([string]$json) {
-  return ([regex]'"tab_id":"([^"]+)"').Match($json).Groups[1].Value
-}
-
 function Open-Tab {
   $cwd = Get-UserCwd
-  $out = (& $HerdrBin tab create --cwd $cwd --focus | Out-String)
-  $tid = Get-TabId $out
-  if (-not $tid) { exit 1 }
-  $split = (& $HerdrBin pane split --tab $tid --focus | Out-String)
-  $np = Get-PaneId $split
-  if ($np) {
-    & $HerdrBin pane run $np "& \`"$ViewerBin\`""
-    & $HerdrBin pane rename $np $PaneLabel *> $null
+  try {
+    $created = (& $HerdrBin tab create --cwd $cwd --focus | ConvertFrom-Json)
+  } catch {
+    exit 1
   }
+
+  $tid = $created.result.tab.tab_id
+  $np = $created.result.root_pane.pane_id
+  if (-not $tid -or -not $np) { exit 1 }
+
+  & $HerdrBin pane run $np "& \`"$ViewerBin\`""
+  if ($LASTEXITCODE -ne 0) {
+    $code = $LASTEXITCODE
+    & $HerdrBin tab close $tid *> $null
+    exit $code
+  }
+
+  & $HerdrBin pane rename $np $PaneLabel *> $null
   exit 0
 }
 

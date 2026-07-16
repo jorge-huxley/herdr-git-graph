@@ -7,13 +7,64 @@ on:
 
 permissions:
   contents: write
+  actions: read
 
 env:
   CARGO_TERM_COLOR: always
 
 jobs:
+  # Tag publishes only after CI has succeeded for the same commit.
+  # Push the release commit to main first (or wait for CI), then push the tag.
+  ci-gate:
+    name: Wait for CI
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require successful CI on tagged commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          sha="${GITHUB_SHA}"
+          echo "Waiting for workflow CI to succeed on ${sha}…"
+          for _ in $(seq 1 90); do
+            json="$(gh run list --workflow ci.yml --commit "${sha}" --limit 10 \
+              --json status,conclusion,databaseId,url)"
+            count="$(printf '%s' "${json}" | jq 'length')"
+            if [ "${count}" -eq 0 ]; then
+              echo "No CI run yet for this commit; waiting…"
+              sleep 10
+              continue
+            fi
+
+            if printf '%s' "${json}" | jq -e '
+              map(select(.status == "completed" and .conclusion == "success")) | length > 0
+            ' >/dev/null; then
+              printf '%s' "${json}" | jq -r '
+                .[] | select(.status == "completed" and .conclusion == "success")
+                | "CI green: run \(.databaseId) — \(.url)"
+              ' | head -n 1
+              exit 0
+            fi
+
+            if printf '%s' "${json}" | jq -e '
+              map(select(.status == "completed" and .conclusion != "success")) | length > 0
+            ' >/dev/null; then
+              printf '%s' "${json}" | jq -r '
+                .[] | select(.status == "completed" and .conclusion != "success")
+                | "CI failed (\(.conclusion)): run \(.databaseId) — \(.url)"
+              ' | head -n 1
+              exit 1
+            fi
+
+            echo "CI still in progress…"
+            sleep 10
+          done
+          echo "Timed out waiting for CI (≈15 minutes)."
+          exit 1
+
   build:
     name: Build ${{ matrix.target }}
+    needs: ci-gate
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false

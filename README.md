@@ -82,6 +82,10 @@ herdr plugin link /path/to/herdr-git-graph
 cargo build --release
 ```
 
+Releases are published from `v*` tags. The Release workflow waits for a green CI
+run on the same commit before building assets, so push the release commit to
+`main` and confirm CI is green (or in progress) before pushing the tag.
+
 ## Keys
 
 | Key | Action |

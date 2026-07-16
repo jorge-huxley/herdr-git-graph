@@ -89,9 +89,14 @@ pub fn layout_graph(commits: &[CommitNode]) -> Vec<GraphRow> {
                 }
             }
             // Fill horizontals between join arms.
-            for i in min_l..=max_l {
-                if i != lane && glyphs[i].0 == EMPTY {
-                    glyphs[i] = (HORIZ, commit_color);
+            for (i, glyph) in glyphs
+                .iter_mut()
+                .enumerate()
+                .take(max_l + 1)
+                .skip(min_l)
+            {
+                if i != lane && glyph.0 == EMPTY {
+                    *glyph = (HORIZ, commit_color);
                 }
             }
         }
@@ -138,7 +143,12 @@ pub fn layout_graph(commits: &[CommitNode]) -> Vec<GraphRow> {
         if parent_lanes.len() > 1 {
             let min_l = parent_lanes.iter().map(|(l, _)| *l).min().unwrap();
             let max_l = parent_lanes.iter().map(|(l, _)| *l).max().unwrap();
-            for i in min_l..=max_l {
+            for (i, glyph) in glyphs
+                .iter_mut()
+                .enumerate()
+                .take(max_l + 1)
+                .skip(min_l)
+            {
                 if i == lane {
                     continue;
                 }
@@ -149,9 +159,9 @@ pub fn layout_graph(commits: &[CommitNode]) -> Vec<GraphRow> {
                         .find(|(l, _)| *l == i)
                         .map(|(_, c)| *c)
                         .unwrap_or(commit_color);
-                    glyphs[i] = (CORNER_SE, color);
-                } else if glyphs[i].0 == EMPTY || glyphs[i].0 == PIPE {
-                    glyphs[i] = (HORIZ, commit_color);
+                    *glyph = (CORNER_SE, color);
+                } else if glyph.0 == EMPTY || glyph.0 == PIPE {
+                    *glyph = (HORIZ, commit_color);
                 }
             }
         }
@@ -163,12 +173,9 @@ pub fn layout_graph(commits: &[CommitNode]) -> Vec<GraphRow> {
             cells.push(GraphCell::new(ch, color));
             if i + 1 < glyphs.len() {
                 // Spacer between lanes; use HORIZ when both neighbors are merge connectors.
+                // `connects_horiz` already includes COMMIT, so one condition covers elbows.
                 let next = glyphs[i + 1].0;
                 let spacer = if connects_horiz(ch) && connects_horiz(next) {
-                    GraphCell::new(HORIZ, commit_color)
-                } else if ch == COMMIT && connects_horiz(next) {
-                    GraphCell::new(HORIZ, commit_color)
-                } else if connects_horiz(ch) && next == COMMIT {
                     GraphCell::new(HORIZ, commit_color)
                 } else {
                     GraphCell::empty()

@@ -1,14 +1,19 @@
 # herdr-git-graph
 
-A read-only git commit graph TUI for [Herdr](https://herdr.dev). Opens in a split pane beside your work, shows an ASCII branch graph with commit details and diffs.
+A read-only git commit graph TUI for [Herdr](https://herdr.dev). Opens in a split
+pane beside your work and shows a colored ASCII branch graph with ref labels,
+dates, authors, and on-demand commit details or diffs.
 
 ## Features
 
-- ASCII commit graph in any terminal (no image protocol required)
+- Colored ASCII commit graph with per-lane branch colors (no image protocol required)
+- Branch, remote, tag, and `HEAD` labels shown as colored pills on each commit
+- Commit list includes relative date, author, and short hash
+- Commit details and patch diffs open only when requested (`Enter` / `d`)
 - Browse commits with keyboard navigation
-- View full commit metadata and patch diffs
 - Filter by branch (all, local, or a specific branch)
-- Fuzzy search commits by subject, author, or hash
+- Fuzzy search commits by subject, author, hash, or ref name
+- `q` / `Esc` quit closes the Herdr host pane (no leftover empty shell pane)
 - Read-only — never modifies your repository
 
 ## Requirements
@@ -67,6 +72,8 @@ herdr server reload-config
 
 Open a Git repository in Herdr and press the configured key. Invoking the same
 action again focuses the existing graph; invoking it while focused closes it.
+Quitting from inside the TUI with `q` (or `Esc` when the details pane is already
+closed) also closes the Herdr pane.
 
 ## Local development
 
@@ -80,14 +87,18 @@ cargo build --release
 | Key | Action |
 | --- | --- |
 | `j` / `k` or arrows | Move selection |
+| `PageUp` / `PageDown` | Jump selection by 10 commits |
 | `Enter` | Open commit details pane |
 | `d` | Open commit diff (again switches back to details) |
 | `b` | Branch filter picker |
 | `/` | Search commits |
 | `Ctrl-u` / `Ctrl-d` | Scroll details/diff |
 | `?` | Help |
-| `Esc` | Close details pane, or quit (closes Herdr pane) |
+| `Esc` | Close details/dialog, or quit and close Herdr pane |
 | `q` | Quit and close Herdr pane |
+
+The graph starts full-width. The right-hand commit pane appears only after
+`Enter` (details) or `d` (diff).
 
 ## Configuration
 

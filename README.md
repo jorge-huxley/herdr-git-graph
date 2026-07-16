@@ -86,8 +86,8 @@ cargo build --release
 | `/` | Search commits |
 | `Ctrl-u` / `Ctrl-d` | Scroll details/diff |
 | `?` | Help |
-| `Esc` | Close details pane or dialogs |
-| `q` | Quit |
+| `Esc` | Close details pane, or quit (closes Herdr pane) |
+| `q` | Quit and close Herdr pane |
 
 ## Configuration
 

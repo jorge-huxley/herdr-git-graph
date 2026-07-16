@@ -26,9 +26,13 @@ pub fn run() -> io::Result<()> {
     let mut terminal = Terminal::new(CrosstermBackend::new(stdout()))?;
 
     let result = event_loop(&mut terminal, &mut ctrl);
+    let close_host_pane = ctrl.should_quit;
 
     disable_raw_mode()?;
     stdout().execute(LeaveAlternateScreen)?;
+    if close_host_pane {
+        host::close_own_pane();
+    }
     result
 }
 

@@ -132,10 +132,12 @@ impl Controller {
                 }
             }
             Intent::Cancel => {
-                // Esc dismisses the details pane only. `q` quits. Avoids terminal
-                // double-Esc closing the pane then immediately quitting.
+                // Esc: dismiss details first; if already dismissed, quit (and
+                // app.rs closes the Herdr host pane so no empty shell remains).
                 if self.show_details_pane {
                     self.close_details_pane();
+                } else {
+                    self.should_quit = true;
                 }
             }
             Intent::Quit => self.should_quit = true,

@@ -28,6 +28,6 @@ pub fn help_text() -> &'static str {
      /              search commits\n\
      Ctrl-u/d       scroll details/diff\n\
      ?              this help\n\
-     Esc            close details / dialogs\n\
-     q              quit"
+     Esc            close details, or quit\n\
+     q              quit (closes Herdr pane)"
 }

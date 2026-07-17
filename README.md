@@ -4,6 +4,8 @@ A read-only git commit graph TUI for [Herdr](https://herdr.dev). Opens in a spli
 pane beside your work and shows a colored ASCII branch graph with ref labels,
 dates, authors, and on-demand commit details or diffs.
 
+![herdr-git-graph showing colored commit graph and commit details](docs/screenshot.png)
+
 ## Features
 
 - Colored ASCII commit graph with per-lane branch colors (no image protocol required)
